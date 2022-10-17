@@ -1,52 +1,52 @@
 
 #include "main.h"
-/**
- * _printf - prints depends of the arguments.
- * @format: s for string, c for char, d for decimals, i for integers,
- * b for cast to binary, u for cast to unsigned decimal, o for print
- * in octal, x for lowercase Hexadecimal, X for Uppercase Hexadecimal,
- * p to print adresses
- * Return: new string.
- */
-int _printf(const char *format, ...)
-{
-	int c1 = 0, w = 0, x = -1, (*f)(va_list, char *s, int *m);
-	int *index;
-	char *s;
-	va_list elements;
 
-	va_start(elements, format);
-	s = malloc(1024);
-	index = &w;
-	if (!s)
+/**
+ * _printf - prints and input into the standard output
+ * @format: the format string
+ * Return: number of bytes printed
+ */
+
+int _printf(const char *format, ...)
+
+{
+	int sum = 0;
+	va_list ap;
+	char *p, *start;
+
+	params_t params = PARAMS_INIT;
+
+	va_start(ap, format);
+
+	if (!format || (format[0] == '%' && !format[1]))/* checking for NULL char */
 		return (-1);
-	if (format)
+	if (format[0] == '%' && format[1] == ' ' && !format[2])
+		return (-1);
+	for (p = (char *)format; *p; p++)
 	{
-		x = 0;
-		for (; format[c1] != '\0'; c1++, x++)
+		init_params(&params, ap);
+		if (*p != '%')/*checking for the % specifier*/
 		{
-			if (format[c1] != '%')
-				set_buffer(s, format[c1], index);
-			else if (format[c1] == '%' && format[c1 + 1] == '\0')
-			{
-				return (-1);
-			}
-			else if (format[c1] == '%' && format[c1 + 1] != '\0')
-			{
-				f = get_function(format[c1 + 1]);
-				if (f)
-				{
-					x = (x + f(elements, s, index)) - 1;
-					c1++;
-				}
-				else
-					set_buffer(s, format[c1], index);
-			}
+			sum += _putchar(*p);
+			continue;
 		}
+		start = p;
+		p++;
+		while (get_flag(p, &params)) /* while char at p is flag character */
+		{
+			p++; /* next character */
+		}
+		p = get_width(p, &params, ap);
+		p = get_precision(p, &params, ap);
+		if (get_modifier(p, &params))
+			p++;
+		if (!get_specifier(p))
+			sum += print_from_to(start, p,
+					params.l_modifier || params.h_modifier ? p - 1 : 0);
+		else
+			sum += get_print_func(p, ap, &params);
 	}
-	if (*index != 1024)
-		write(1, s, *index);
-	free(s);
-	va_end(elements);
-	return (x);
+	_putchar(BUF_FLUSH);
+	va_end(ap);
+	return (sum);
 }
